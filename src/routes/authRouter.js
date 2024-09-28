@@ -2,7 +2,9 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const config = require('../config.js');
 const { asyncHandler } = require('../endpointHelper.js');
-const { DB, Role } = require('../database/database.js');
+const { DB } = require('../database/database.js');
+const { Role } = require('../model/model.js');
+const JWToken = require('../JWToken.js');
 
 const authRouter = express.Router();
 
@@ -40,12 +42,12 @@ authRouter.endpoints = [
 ];
 
 async function setAuthUser(req, res, next) {
-  const token = readAuthToken(req);
+  const token = JWToken.fromRequest(req);
   if (token) {
     try {
       if (await DB.isLoggedIn(token)) {
         // Check the database to make sure the token is valid.
-        req.user = jwt.verify(token, config.jwtSecret);
+        req.user = JWToken.verify(config.jwtSecret);
         req.user.isRole = (role) => !!req.user.roles.find((r) => r.role === role);
       }
     } catch {
@@ -73,7 +75,7 @@ authRouter.post(
     }
     const user = await DB.addUser({ name, email, password, roles: [{ role: Role.Diner }] });
     const auth = await setAuth(user);
-    res.json({ user: user, token: auth });
+    res.json({ user: user, token: auth.fullText });
   })
 );
 
@@ -84,7 +86,7 @@ authRouter.put(
     const { email, password } = req.body;
     const user = await DB.getUser(email, password);
     const auth = await setAuth(user);
-    res.json({ user: user, token: auth });
+    res.json({ user: user, token: auth.fullText });
   })
 );
 
@@ -116,24 +118,16 @@ authRouter.put(
 );
 
 async function setAuth(user) {
-  const token = jwt.sign(user, config.jwtSecret);
+  const token = JWToken.sign(user, config.jwtSecret);
   await DB.loginUser(user.id, token);
   return token;
 }
 
 async function clearAuth(req) {
-  const token = readAuthToken(req);
+  const token = JWToken.fromRequest(req);
   if (token) {
     await DB.logoutUser(token);
   }
-}
-
-function readAuthToken(req) {
-  const authHeader = req.headers.authorization;
-  if (authHeader) {
-    return authHeader.split(' ')[1];
-  }
-  return null;
 }
 
 module.exports = { authRouter, setAuthUser };

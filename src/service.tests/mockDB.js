@@ -1,11 +1,14 @@
-const mysql = require('mysql2/promise');
-const bcrypt = require('bcrypt');
-const config = require('../config.js');
-const { StatusCodeError } = require('../endpointHelper.js');
-const dbModel = require('./dbModel.js');
-class DB {
+const { StatusCodeError } = require("../endpointHelper.js");
+
+function userRecordToUserData(record) {
+  return { name: record.name, email: record.email, roles: record.roles, id: record.id };
+}
+
+class MockDB {
   constructor() {
-    this.initialized = this.initializeDatabase();
+    this.usersByEmail = {};
+    this.auths = {};
+    this.nextUserId = 0;
   }
 
   async getMenu() {
@@ -29,49 +32,34 @@ class DB {
   }
 
   async addUser(user) {
-    const connection = await this.getConnection();
-    try {
-      user.password = await bcrypt.hash(user.password, 10);
-
-      const userResult = await this.query(connection, `INSERT INTO user (name, email, password) VALUES (?, ?, ?)`, [user.name, user.email, user.password]);
-      const userId = userResult.insertId;
-      for (const role of user.roles) {
-        switch (role.role) {
-          case Role.Franchisee: {
-            const franchiseId = await this.getID(connection, 'name', role.object, 'franchise');
-            await this.query(connection, `INSERT INTO userRole (userId, role, objectId) VALUES (?, ?, ?)`, [userId, role.role, franchiseId]);
-            break;
-          }
-          default: {
-            await this.query(connection, `INSERT INTO userRole (userId, role, objectId) VALUES (?, ?, ?)`, [userId, role.role, 0]);
-            break;
-          }
-        }
-      }
-      return { ...user, id: userId, password: undefined };
-    } finally {
-      connection.end();
+    if (this.usersByEmail[user.email] !== undefined) {
+      throw new StatusCodeError("Email is already registered. Did you mean to log in?", 409);
     }
+    const record = {
+      name: user.name,
+      email: user.email,
+      password: user.password,
+      roles: user.roles.map((role) => {
+        return {
+          role: role.role,
+          objectId: role.objectId
+        }
+      }),
+      id: this.nextUserId
+    }
+
+    this.usersByEmail[user.email] = record;
+    this.nextUserId++;
+
+    return userRecordToUserData(record);
   }
 
   async getUser(email, password) {
-    const connection = await this.getConnection();
-    try {
-      const userResult = await this.query(connection, `SELECT * FROM user WHERE email=?`, [email]);
-      const user = userResult[0];
-      if (!user || !(await bcrypt.compare(password, user.password))) {
-        throw new StatusCodeError('unknown user', 404);
-      }
-
-      const roleResult = await this.query(connection, `SELECT * FROM userRole WHERE userId=?`, [user.id]);
-      const roles = roleResult.map((r) => {
-        return { objectId: r.objectId || undefined, role: r.role };
-      });
-
-      return { ...user, roles: roles, password: undefined };
-    } finally {
-      connection.end();
+    const record = this.usersByEmail[email];
+    if (!record || record.password != password) {
+      throw new StatusCodeError('unknown user', 404);
     }
+    return userRecordToUserData(record);
   }
 
   async updateUser(userId, email, password) {
@@ -96,31 +84,15 @@ class DB {
   }
 
   async loginUser(userId, token) {
-    const connection = await this.getConnection();
-    try {
-      await this.query(connection, `INSERT INTO auth (token, userId) VALUES (?, ?)`, [token.signature, userId]);
-    } finally {
-      connection.end();
-    }
+    this.auths[token.signature] = userId;
   }
 
   async isLoggedIn(token) {
-    const connection = await this.getConnection();
-    try {
-      const authResult = await this.query(connection, `SELECT userId FROM auth WHERE token=?`, [token.signature]);
-      return authResult.length > 0;
-    } finally {
-      connection.end();
-    }
+    return this.auths[token.signature] !== undefined;
   }
 
   async logoutUser(token) {
-    const connection = await this.getConnection();
-    try {
-      await this.query(connection, `DELETE FROM auth WHERE token=?`, [token.signature]);
-    } finally {
-      connection.end();
-    }
+    delete this.auths[token.signature];
   }
 
   async getOrders(user, page = 1) {
@@ -285,12 +257,6 @@ class DB {
     throw new Error('No ID found');
   }
 
-  async getConnection() {
-    // Make sure the database is initialized before trying to get a connection.
-    await this.initialized;
-    return this._getConnection();
-  }
-
   async _getConnection(setUse = true) {
     const connection = await mysql.createConnection({
       host: config.db.connection.host,
@@ -337,5 +303,15 @@ class DB {
   }
 }
 
-const db = new DB();
-module.exports = { DB: db };
+function mockDB() {
+  jest.mock('../database/database', () => {
+    return {
+      DB: new MockDB()
+    }
+  });
+}
+
+module.exports = mockDB;
+
+
+

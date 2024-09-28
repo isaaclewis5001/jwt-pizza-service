@@ -1,5 +1,6 @@
 const express = require('express');
-const { DB, Role } = require('../database/database.js');
+const { DB } = require('../database/database.js');
+const { Role } = require('../model/model.js');
 const { authRouter } = require('./authRouter.js');
 const { StatusCodeError, asyncHandler } = require('../endpointHelper.js');
 
