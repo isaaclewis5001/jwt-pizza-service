@@ -1,6 +1,19 @@
-const app = require('./service.js');
+const App = require('./service.js');
+const Database = require('./database/database.js');
+const config = require('./config.js');
+
+const db = new Database(config.db)
+
+const app = new App({
+  database: db,
+  config
+});
 
 const port = process.argv[2] || 3000;
-app.listen(port, () => {
+app.app.listen(port, () => {
   console.log(`Server started on port ${port}`);
 });
+
+db.close();
+
+

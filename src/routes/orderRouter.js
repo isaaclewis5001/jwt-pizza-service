@@ -1,13 +1,11 @@
 const express = require('express');
 const config = require('../config.js');
-const { DB } = require('../database/database.js');
 const { Role } = require('../model/model.js');
-const { authRouter } = require('./authRouter.js');
+const AuthRouter = require('./authRouter.js');
 const { asyncHandler, StatusCodeError } = require('../endpointHelper.js');
 
-const orderRouter = express.Router();
 
-orderRouter.endpoints = [
+const endpoints = [
   {
     method: 'GET',
     path: '/api/order/menu',
@@ -41,57 +39,65 @@ orderRouter.endpoints = [
   },
 ];
 
-// getMenu
-orderRouter.get(
-  '/menu',
-  asyncHandler(async (req, res) => {
-    res.send(await DB.getMenu());
-  })
-);
+class OrderRouter {
+  constructor(appContext) {
+    this.router = express.Router();
+    this.router.endpoints = endpoints;
 
-// addMenuItem
-orderRouter.put(
-  '/menu',
-  authRouter.authenticateToken,
-  asyncHandler(async (req, res) => {
-    if (!req.user.isRole(Role.Admin)) {
-      throw new StatusCodeError('unable to add menu item', 403);
-    }
+    // getMenu
+    this.router.get(
+      '/menu',
+      asyncHandler(async (_req, res) => {
+        res.send(await appContext.database.getMenu());
+      })
+    );
 
-    const addMenuItemReq = req.body;
-    await DB.addMenuItem(addMenuItemReq);
-    res.send(await DB.getMenu());
-  })
-);
+    // addMenuItem
+    this.router.put(
+      '/menu',
+      AuthRouter.authenticateToken,
+      asyncHandler(async (req, res) => {
+        if (!req.user.isRole(Role.Admin)) {
+          throw new StatusCodeError('unable to add menu item', 403);
+        }
 
-// getOrders
-orderRouter.get(
-  '/',
-  authRouter.authenticateToken,
-  asyncHandler(async (req, res) => {
-    res.json(await DB.getOrders(req.user, req.query.page));
-  })
-);
+        const addMenuItemReq = req.body;
+        await appContext.database.addMenuItem(addMenuItemReq);
+        res.send(await appContext.database.getMenu());
+      })
+    );
 
-// createOrder
-orderRouter.post(
-  '/',
-  authRouter.authenticateToken,
-  asyncHandler(async (req, res) => {
-    const orderReq = req.body;
-    const order = await DB.addDinerOrder(req.user, orderReq);
-    const r = await fetch(`${config.factory.url}/api/order`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', authorization: `Bearer ${config.factory.apiKey}` },
-      body: JSON.stringify({ diner: { id: req.user.id, name: req.user.name, email: req.user.email }, order }),
-    });
-    const j = await r.json();
-    if (r.ok) {
-      res.send({ order, jwt: j.jwt, reportUrl: j.reportUrl });
-    } else {
-      res.status(500).send({ message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
-    }
-  })
-);
+    // getOrders
+    this.router.get(
+      '/',
+      AuthRouter.authenticateToken,
+      asyncHandler(async (req, res) => {
+        res.json(await appContext.database.getOrders(req.user, req.query.page));
+      })
+    );
 
-module.exports = orderRouter;
+    // createOrder
+    this.router.post(
+      '/',
+      AuthRouter.authenticateToken,
+      asyncHandler(async (req, res) => {
+        const orderReq = req.body;
+        const order = await appContext.database.addDinerOrder(req.user, orderReq);
+        const r = await fetch(`${config.factory.url}/api/order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', authorization: `Bearer ${config.factory.apiKey}` },
+          body: JSON.stringify({ diner: { id: req.user.id, name: req.user.name, email: req.user.email }, order }),
+        });
+        const j = await r.json();
+        if (r.ok) {
+          res.send({ order, jwt: j.jwt, reportUrl: j.reportUrl });
+        } else {
+          res.status(500).send({ message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
+        }
+      })
+    );
+  }
+}
+
+
+module.exports = OrderRouter;
