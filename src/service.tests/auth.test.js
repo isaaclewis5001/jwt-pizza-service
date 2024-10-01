@@ -1,44 +1,8 @@
 const supertest = require('supertest');
+const { registerUser, loginUser, logoutUser, testUsers, defaultAdmin } = require('./authUtils.js');
 const withApp = require('./withApp.js');
 
-let testUsers = [
-  {
-    name: 'jacob marley',
-    email: 'jac.marley@smholdings.uk',
-    password: 'moreliketinyjim'
-  }, {
-    name: 'ebeneezer scrooge',
-    email: 'eb.scrooge@smholdings.uk',
-    password: 'humbug'
-  }
-];
-
-async function registerUser(app, user, expectStatus = 200) {
-  return (await supertest(app.app)
-    .post('/api/auth')
-    .send({ name: user.name, email: user.email, password: user.password })
-    .expect(expectStatus)
-    .expect('Content-Type', /json/)
-  ).body;
-}
-
-async function loginUser(app, user, expectStatus = 200) {
-  return (await supertest(app.app)
-    .put('/api/auth')
-    .send({ email: user.email, password: user.password })
-    .expect(expectStatus)
-    .expect('Content-Type', /json/)
-  ).body;
-}
-
-async function logoutUser(app, auth, expectStatus = 200) {
-  await supertest(app.app)
-    .del('/api/auth')
-    .set('Authorization', 'Bearer: ' + auth)
-    .expect(expectStatus);
-}
-
-function validateLoginResponse(response, user) {
+function validateLoginResponse(response, user, roles) {
   expect(response.user).toBeDefined();
 
   const token = response.token;
@@ -51,9 +15,7 @@ function validateLoginResponse(response, user) {
     user: {
       name: user.name,
       email: user.email,
-      roles: [
-        { role: 'diner' }
-      ],
+      roles: user.roles,
       id
     },
     token
@@ -87,8 +49,17 @@ test('user auth cycle', async () => {
     await loginUser(app, { email: user1.email, password: "spoof" }, 404);
     await loginUser(app, { email: "youdontknowmebut", password: "pleaseletmein" }, 404);
 
+    await loginUser(app, { email: "youdontknowmebut", password: "pleaseletmein" }, 404);
+
+
     const login1response = await loginUser(app, user1);
     validateLoginResponse(login1response, user1);
+
+
+    validateLoginResponse(
+      await loginUser(app, defaultAdmin),
+      defaultAdmin
+    );
 
     await logoutUser(app, login1response.token);
   });
