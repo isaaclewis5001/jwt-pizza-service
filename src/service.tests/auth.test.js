@@ -1,3 +1,4 @@
+const {expect, test} = require('@jest/globals');
 
 const { registerUser, loginUser, logoutUser, updateUser, testUsers, defaultAdmin } = require('./authUtils.js');
 const withApp = require('./withApp.js');

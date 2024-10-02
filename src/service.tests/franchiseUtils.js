@@ -2,7 +2,7 @@ const supertest = require('supertest');
 const { testUsers } = require('./authUtils');
 
 
-testFranchises = [
+const testFranchises = [
     {
         name: "The Jawt",
         admins: [{
