@@ -23,11 +23,10 @@ class ConnectionPool {
 
       const [rows] = await connection.query(`select schema_name from information_schema.schemata where schema_name = ?`, [dbname]);
       const dbexists = rows.length > 0;
-      console.log(dbexists ? 'database exists' : 'database does not exist');
+      console.log(dbexists ? 'database exists' : `database does not exist (${dbname})`);
 
       await connection.query(`CREATE DATABASE IF NOT EXISTS ${dbname}`);
       await connection.query(`USE ${dbname}`);
-
       await initFn(connection, dbexists);
       this.release(connection);
     } catch (err) {

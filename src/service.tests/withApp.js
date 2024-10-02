@@ -1,13 +1,11 @@
-const mysql = require('mysql2/promise');
 const globalConfig = require('../config.js');
 const Database = require('../database/database.js');
-const App = require('../service.js')
+const App = require('../service.js');
 
-let testDBID = 0;
 
 async function withApp(fn) {
-  const name = 'jwt_pizza_service_test' + testDBID;
-  testDBID += 1;
+  const rand = Math.floor(Math.random() * 10000000000);
+  const name = 'jwt_pizza_service_test' + rand;
 
   const dbConnectionConfig = {
     ...globalConfig.db.connection,

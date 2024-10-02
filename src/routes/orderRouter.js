@@ -1,7 +1,6 @@
 const express = require('express');
 const config = require('../config.js');
 const { Role } = require('../model/model.js');
-const AuthRouter = require('./authRouter.js');
 const { asyncHandler, StatusCodeError } = require('../endpointHelper.js');
 
 
@@ -40,7 +39,7 @@ const endpoints = [
 ];
 
 class OrderRouter {
-  constructor(appContext) {
+  constructor(app) {
     this.router = express.Router();
     this.router.endpoints = endpoints;
 
@@ -48,41 +47,41 @@ class OrderRouter {
     this.router.get(
       '/menu',
       asyncHandler(async (_req, res) => {
-        res.send(await appContext.database.getMenu());
+        res.send(await app.context.database.getMenu());
       })
     );
 
     // addMenuItem
     this.router.put(
       '/menu',
-      AuthRouter.authenticateToken,
+      app.authenticateToken,
       asyncHandler(async (req, res) => {
         if (!req.user.isRole(Role.Admin)) {
           throw new StatusCodeError('unable to add menu item', 403);
         }
 
         const addMenuItemReq = req.body;
-        await appContext.database.addMenuItem(addMenuItemReq);
-        res.send(await appContext.database.getMenu());
+        await app.context.database.addMenuItem(addMenuItemReq);
+        res.send(await app.context.database.getMenu());
       })
     );
 
     // getOrders
     this.router.get(
       '/',
-      AuthRouter.authenticateToken,
+      app.authenticateToken,
       asyncHandler(async (req, res) => {
-        res.json(await appContext.database.getOrders(req.user, req.query.page));
+        res.json(await app.context.database.getOrders(req.user, req.query.page));
       })
     );
 
     // createOrder
     this.router.post(
       '/',
-      AuthRouter.authenticateToken,
+      app.authenticateToken,
       asyncHandler(async (req, res) => {
         const orderReq = req.body;
-        const order = await appContext.database.addDinerOrder(req.user, orderReq);
+        const order = await app.context.database.addDinerOrder(req.user, orderReq);
         const r = await fetch(`${config.factory.url}/api/order`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', authorization: `Bearer ${config.factory.apiKey}` },

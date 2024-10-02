@@ -8,15 +8,8 @@ const JWToken = require('./JWToken.js');
 class App {
   constructor(appContext) {
     this.context = appContext;
-    this.authRouter = new AuthRouter(appContext);
-    this.orderRouter = new OrderRouter(appContext);
-    this.franchiseRouter = new FranchiseRouter(appContext);
-    this.apiRouter = express.Router();
-
-
-    // Authenticate token
-
-    async function setAuthUser(req, _res, next) {
+    
+    this.authenticateToken = async (req, res, next) => { 
       const token = JWToken.fromRequest(req);
       if (token) {
         try {
@@ -24,17 +17,25 @@ class App {
             // Check the database to make sure the token is valid.
             req.user = token.verify(appContext.config.jwtSecret);
             req.user.isRole = (role) => !!req.user.roles.find((r) => r.role === role);
+            return await next();
           }
         } catch {
-          req.user = null;
-        }
+          return res.status(401).send({ message: 'unauthorized' });
+        };
       }
-      next();
+      return res.status(401).send({ message: 'unauthorized' });
     }
+
+    this.authRouter = new AuthRouter(this);
+    this.orderRouter = new OrderRouter(this);
+    this.franchiseRouter = new FranchiseRouter(this);
+    this.apiRouter = express.Router();
+
+    
+    // Authenticate token
 
     this.app = express();
     this.app.use(express.json());
-    this.app.use(setAuthUser);
     this.app.use((req, res, next) => {
       res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');

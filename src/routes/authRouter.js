@@ -3,7 +3,7 @@ const { asyncHandler } = require('../endpointHelper.js');
 const { Role } = require('../model/model.js');
 const JWToken = require('../JWToken.js');
 
-endpoints = [
+const endpoints = [
   {
     method: 'POST',
     path: '/api/auth',
@@ -37,7 +37,7 @@ endpoints = [
 ];
 
 class AuthRouter {
-  constructor(appContext) {
+  constructor(app) {
     this.router = express.Router();
     this.router.endpoints = endpoints;
 
@@ -49,7 +49,7 @@ class AuthRouter {
         if (!name || !email || !password) {
           return res.status(400).json({ message: 'name, email, and password are required' });
         }
-        const user = await appContext.database.addUser({ name, email, password, roles: [{ role: Role.Diner }] });
+        const user = await app.context.database.addUser({ name, email, password, roles: [{ role: Role.Diner }] });
         const auth = await setAuth(user);
         res.json({ user: user, token: auth.fullText });
       })
@@ -60,7 +60,7 @@ class AuthRouter {
       '/',
       asyncHandler(async (req, res) => {
         const { email, password } = req.body;
-        const user = await appContext.database.getUser(email, password);
+        const user = await app.context.database.getUser(email, password);
         const auth = await setAuth(user);
         res.json({ user: user, token: auth.fullText });
       })
@@ -69,7 +69,7 @@ class AuthRouter {
     // logout
     this.router.delete(
       '/',
-      AuthRouter.authenticateToken,
+      app.authenticateToken,
       asyncHandler(async (req, res) => {
         clearAuth(req);
         res.json({ message: 'logout successful' });
@@ -79,40 +79,33 @@ class AuthRouter {
     // updateUser
     this.router.put(
       '/:userId',
-      AuthRouter.authenticateToken,
+      app.authenticateToken,
       asyncHandler(async (req, res) => {
         const { email, password } = req.body;
         const userId = Number(req.params.userId);
         const user = req.user;
         if (user.id !== userId && !user.isRole(Role.Admin)) {
-          return res.status(403).json({ message: 'unauthorized' });
+          return res.status(401).json({ message: 'unauthorized' });
         }
 
-        const updatedUser = await appContext.database.updateUser(userId, email, password);
+        const updatedUser = await app.context.database.updateUser(userId, email, password);
         res.json(updatedUser);
       })
     );
 
     async function setAuth(user) {
-      const token = JWToken.sign(user, appContext.config.jwtSecret);
-      await appContext.database.loginUser(user.id, token);
+      const token = JWToken.sign(user, app.context.config.jwtSecret);
+      await app.context.database.loginUser(user.id, token);
       return token;
     }
 
     async function clearAuth(req) {
       const token = JWToken.fromRequest(req);
       if (token) {
-        await appContext.database.logoutUser(token);
+        await app.context.database.logoutUser(token);
       }
     }
   }
-
-  static authenticateToken(req, res, next) {
-    if (!req.user) {
-      return res.status(401).send({ message: 'unauthorized' });
-    }
-    next();
-  };
 }
 
 module.exports = AuthRouter;

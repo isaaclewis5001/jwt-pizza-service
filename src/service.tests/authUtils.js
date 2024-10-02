@@ -46,4 +46,11 @@ async function logoutUser(app, auth, expectStatus = 200) {
     .expect(expectStatus);
 }
 
-module.exports = { registerUser, loginUser, logoutUser, testUsers, defaultAdmin }
+async function updateUser(app, auth, userId, email, password, expectStatus = 200) {
+  return (await supertest(app.app)
+    .put(`/api/auth/${userId}`)
+    .set('Authorization', 'Bearer: ' + auth)
+    .send({ email, password })
+    .expect(expectStatus)).body;
+}
+module.exports = { registerUser, loginUser, logoutUser, testUsers, updateUser, defaultAdmin }

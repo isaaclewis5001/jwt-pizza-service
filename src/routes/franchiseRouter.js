@@ -1,6 +1,5 @@
 const express = require('express');
 const { Role } = require('../model/model.js');
-const AuthRouter = require('./authRouter.js');
 const { StatusCodeError, asyncHandler } = require('../endpointHelper.js');
 
 
@@ -55,7 +54,7 @@ const endpoints = [
 ];
 
 class FranchiseRouter {
-  constructor(appContext) {
+  constructor(app) {
     this.router = express.Router();
     this.router.endpoints = endpoints;
 
@@ -63,19 +62,19 @@ class FranchiseRouter {
     this.router.get(
       '/',
       asyncHandler(async (req, res) => {
-        res.json(await appContext.database.getFranchises(req.user));
+        res.json(await app.context.database.getFranchises(req.user));
       })
     );
 
     // getUserFranchises
     this.router.get(
       '/:userId',
-      AuthRouter.authenticateToken,
+      app.authenticateToken,
       asyncHandler(async (req, res) => {
         let result = [];
         const userId = Number(req.params.userId);
         if (req.user.id === userId || req.user.isRole(Role.Admin)) {
-          result = await appContext.database.getUserFranchises(userId);
+          result = await app.context.database.getUserFranchises(userId);
         }
 
         res.json(result);
@@ -85,28 +84,27 @@ class FranchiseRouter {
     // createFranchise
     this.router.post(
       '/',
-      AuthRouter.authenticateToken,
+      app.authenticateToken,
       asyncHandler(async (req, res) => {
         if (!req.user.isRole(Role.Admin)) {
           throw new StatusCodeError('unable to create a franchise', 403);
         }
-
         const franchise = req.body;
-        res.send(await appContext.database.createFranchise(franchise));
+        res.send(await app.context.database.createFranchise(franchise));
       })
     );
 
     // deleteFranchise
     this.router.delete(
       '/:franchiseId',
-      AuthRouter.authenticateToken,
+      app.authenticateToken,
       asyncHandler(async (req, res) => {
         if (!req.user.isRole(Role.Admin)) {
           throw new StatusCodeError('unable to delete a franchise', 403);
         }
 
         const franchiseId = Number(req.params.franchiseId);
-        await appContext.database.deleteFranchise(franchiseId);
+        await app.context.database.deleteFranchise(franchiseId);
         res.json({ message: 'franchise deleted' });
       })
     );
@@ -114,31 +112,31 @@ class FranchiseRouter {
     // createStore
     this.router.post(
       '/:franchiseId/store',
-      AuthRouter.authenticateToken,
+      app.authenticateToken,
       asyncHandler(async (req, res) => {
         const franchiseId = Number(req.params.franchiseId);
-        const franchise = await appContext.database.getFranchise({ id: franchiseId });
+        const franchise = await app.context.database.getFranchise({ id: franchiseId });
         if (!franchise || (!req.user.isRole(Role.Admin) && !franchise.admins.some((admin) => admin.id === req.user.id))) {
           throw new StatusCodeError('unable to create a store', 403);
         }
 
-        res.send(await appContext.database.createStore(franchise.id, req.body));
+        res.send(await app.context.database.createStore(franchise.id, req.body));
       })
     );
 
     // deleteStore
     this.router.delete(
       '/:franchiseId/store/:storeId',
-      AuthRouter.authenticateToken,
+      app.authenticateToken,
       asyncHandler(async (req, res) => {
         const franchiseId = Number(req.params.franchiseId);
-        const franchise = await appContext.database.getFranchise({ id: franchiseId });
+        const franchise = await app.context.database.getFranchise({ id: franchiseId });
         if (!franchise || (!req.user.isRole(Role.Admin) && !franchise.admins.some((admin) => admin.id === req.user.id))) {
           throw new StatusCodeError('unable to delete a store', 403);
         }
 
         const storeId = Number(req.params.storeId);
-        await appContext.database.deleteStore(franchiseId, storeId);
+        await app.context.database.deleteStore(franchiseId, storeId);
         res.json({ message: 'store deleted' });
       })
     );
