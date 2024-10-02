@@ -39,7 +39,6 @@ on:
 
         - name: Lint
           run: yarn lint
-          - name: Write config file
         
         - name: Write config file
           run: |
