@@ -63,8 +63,8 @@ jobs:
           };" > src/config.js
 
       - name: Tests
-        run: yarn test
-        
+        run: yarn test --coverage
+
       - name: set version
         id: set_version
         run: |
