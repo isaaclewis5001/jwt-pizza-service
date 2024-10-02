@@ -20,45 +20,45 @@ on:
     branches:
       - main
   workflow_dispatch:
-  jobs:
-    build:
-      name: Build
-      runs-on: ubuntu-latest
-      outputs:
-        version: ${{ steps.set_version.outputs.version }}
-      steps:
-        - name: Checkout repo
-          uses: actions/checkout@v4
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.set_version.outputs.version }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-        - name: Setup Node
-          uses: actions/setup-node@v4
-          with:
-            node-version: "20.x"
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
 
-        - name: Install dependencies
-          run: yarn install --frozen-lockfile
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
 
-        - name: Lint
-          run: yarn lint
-        
-        - name: Write config file
-          run: |
-            echo "module.exports = {
-              jwtSecret: '${{ secrets.JWT_SECRET }}',
-              db: {
-                connection: {
-                  host: '127.0.0.1',
-                  user: 'root',
-                  password: 'tempdbpassword',
-                  database: 'pizza',
-                  connectTimeout: 60000,
-                },
-                listPerPage: 10,
+      - name: Lint
+        run: yarn lint
+      
+      - name: Write config file
+        run: |
+          echo "module.exports = {
+            jwtSecret: '${{ secrets.JWT_SECRET }}',
+            db: {
+              connection: {
+                host: '127.0.0.1',
+                user: 'root',
+                password: 'tempdbpassword',
+                database: 'pizza',
+                connectTimeout: 60000,
               },
-              factory: {
-                url: 'https://pizza-factory.cs329.click',
-                apiKey: '${{ secrets.FACTORY_API_KEY }}',
-              },
-            };" > src/config.js
-        - name: Tests
-          run: yarn test
+              listPerPage: 10,
+            },
+            factory: {
+              url: 'https://pizza-factory.cs329.click',
+              apiKey: '${{ secrets.FACTORY_API_KEY }}',
+            },
+          };" > src/config.js
+      - name: Tests
+        run: yarn test
