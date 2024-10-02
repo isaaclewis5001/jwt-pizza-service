@@ -56,5 +56,17 @@ async function deleteFranchise(app, auth, franchiseId, expectStatus=200) {
         .expect('Content-Type', /json/);
 }
 
+async function createStore(app, auth, franchiseId, store, expectStatus=200) {
+    return(await supertest(app.app)
+        .post(`/api/franchise/${franchiseId}/store`)
+        .set('Authorization', 'Bearer: ' + auth)
+        .send({
+            name: store.name,
+            location: store.location
+        })
+        .expect(expectStatus)
+        .expect('Content-Type', /json/)).body;
+}
 
-module.exports = {listAllFranchises, listUserFranchises, deleteFranchise, createFranchise, testFranchises}
+
+module.exports = {listAllFranchises, listUserFranchises, deleteFranchise, createFranchise, createStore, testFranchises}
