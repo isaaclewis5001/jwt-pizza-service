@@ -37,10 +37,10 @@ jobs:
           node-version: "20.x"
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: npm ci
 
       - name: Lint
-        run: yarn lint
+        run: npm lint
       
       - name: Write config file
         run: |
@@ -63,7 +63,7 @@ jobs:
           };" > src/config.js
 
       - name: Tests
-        run: yarn test
+        run: npm test
 
       - name: set version
         id: set_version
