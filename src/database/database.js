@@ -24,11 +24,15 @@ class Database {
   async addMenuItem(item) {
     const connection = await this.pool.getConnection();
     try {
-      const addResult = await Database.query(connection, `INSERT INTO menu (title, description, image, price) VALUES (?, ?, ?, ?)`, [item.title, item.description, item.image, item.price]);
-      return { ...item, id: addResult.insertId };
+      return await Database._addMenuItemWithConn(item, connection);
     } finally {
       this.pool.release(connection);
     }
+  }
+
+  static async _addMenuItemWithConn(item, conn) {
+    const addResult = await Database.query(conn, `INSERT INTO menu (title, description, image, price) VALUES (?, ?, ?, ?)`, [item.title, item.description, item.image, item.price]);
+    return { ...item, id: addResult.insertId };
   }
 
   async addUser(user) {

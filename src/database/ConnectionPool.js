@@ -17,7 +17,14 @@ class ConnectionPool {
   }
 
   async _initialize(initFn) {
-    const connection = await this._getConnection(false);
+    let connection;
+    try {
+      connection = await this._getConnection(false);
+    }
+    catch {
+      console.warn("could not connect to database, most endpoints will break!")
+      return;
+    }
     try {
       const dbname = getDBNameFromConfig(this._config);
 
@@ -32,7 +39,10 @@ class ConnectionPool {
     } catch (err) {
       connection.end();
       console.error(JSON.stringify({ message: 'Error initializing database', exception: err.message, connection: this._config.connection }));
-      throw err;
+      return Promise.reject(err);
+    }
+    finally {
+      this.release(connection)
     }
   }
 

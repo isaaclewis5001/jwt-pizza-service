@@ -3,7 +3,6 @@ const Database = require('./database/database.js');
 const config = require('./config.js');
 
 const db = new Database(config.db)
-
 const app = new App({
   database: db,
   config
@@ -15,6 +14,8 @@ app.app.listen(port, () => {
   console.log(`Server started on port ${port}`);
 });
 
-db.close();
+app.app.on('exit', () => {
+  db.close();
+})
 
 
