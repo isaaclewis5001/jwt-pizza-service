@@ -163,7 +163,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Create release
-        uses: ncipollo/release-action@v1env
+        uses: ncipollo/release-action@v1
         env:
           version: ${{needs.build.outputs.version}}
         with:
