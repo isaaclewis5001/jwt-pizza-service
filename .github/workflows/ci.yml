@@ -160,8 +160,7 @@ jobs:
   release:
     needs:
       - build
-      - deploy
-    runs-on: ubuntu
+    runs-on: ubuntu-latest
     steps:
       - name: Create release
         uses: ncipollo/release-action@v1env
