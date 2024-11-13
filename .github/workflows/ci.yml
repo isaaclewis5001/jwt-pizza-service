@@ -60,6 +60,12 @@ jobs:
               url: 'https://pizza-factory.cs329.click',
               apiKey: '${{ secrets.FACTORY_API_KEY }}',
             },
+            grafana: {
+              "source": "jwt-pizza-service",
+              "userId": "${{ secrets.GRAFANA_USER_ID }}",
+              "url": "https://influx-prod-13-prod-us-east-0.grafana.net/api/v1/push/influx/write",
+              "apiKey": "${{ secrets.GRAFANA_API_KEY }}"
+            }
           };" > src/config.js
 
       - name: Tests
