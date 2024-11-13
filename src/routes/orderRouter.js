@@ -2,6 +2,7 @@ const express = require('express');
 const config = require('../config.js');
 const { Role } = require('../model/model.js');
 const { asyncHandler, StatusCodeError } = require('../endpointHelper.js');
+const metrics = require('../metrics.js');
 
 
 const endpoints = [
@@ -82,15 +83,23 @@ class OrderRouter {
       asyncHandler(async (req, res) => {
         const orderReq = req.body;
         const order = await app.context.database.addDinerOrder(req.user, orderReq);
+        const startTime = Date.now();
         const r = await fetch(`${config.factory.url}/api/order`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', authorization: `Bearer ${config.factory.apiKey}` },
           body: JSON.stringify({ diner: { id: req.user.id, name: req.user.name, email: req.user.email }, order }),
         });
         const j = await r.json();
+        metrics.reportFactoryLatency(Date.now() - startTime);
         if (r.ok) {
+          const price = order.items.reduce((acc, item) => {
+            try { return acc + Number(item.price) }
+            catch { return acc }
+          }, 0);
+          metrics.reportSale(order.items.length, price, true);
           res.send({ order, jwt: j.jwt, reportUrl: j.reportUrl });
         } else {
+          metrics.reportSale(0, 0, false);
           res.status(500).send({ message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
         }
       })

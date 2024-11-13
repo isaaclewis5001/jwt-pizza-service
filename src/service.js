@@ -4,12 +4,25 @@ const OrderRouter = require('./routes/orderRouter.js');
 const FranchiseRouter = require('./routes/franchiseRouter.js');
 const version = require('./version.json');
 const JWToken = require('./JWToken.js');
+const metrics = require('./metrics.js');
+const responseTime = require('response-time');
+
+
+function requestReporting(req, _, next) {
+  metrics.incrementRequests(req.method);
+  next();
+}
+
+
+function responseTimeReporting(_, _, time) {
+  metrics.reportServiceLatency(time)
+}
 
 class App {
   constructor(appContext) {
     this.context = appContext;
-    
-    this.authenticateToken = async (req, res, next) => { 
+
+    this.authenticateToken = async (req, res, next) => {
       const token = JWToken.fromRequest(req);
       if (token) {
         try {
@@ -17,12 +30,12 @@ class App {
             // Check the database to make sure the token is valid.
             req.user = token.verify(appContext.config.jwtSecret);
             req.user.isRole = (role) => !!req.user.roles.find((r) => r.role === role);
+            metrics.reportAuth(true);
             return await next();
           }
-        } catch {
-          return res.status(401).send({ message: 'unauthorized' });
-        };
+        } catch { }
       }
+      metrics.reportAuth(false);
       return res.status(401).send({ message: 'unauthorized' });
     }
 
@@ -31,10 +44,12 @@ class App {
     this.franchiseRouter = new FranchiseRouter(this);
     this.apiRouter = express.Router();
 
-    
+
     // Authenticate token
 
     this.app = express();
+    this.app.use(requestReporting);
+    this.app.use(responseTime(responseTimeReporting))
     this.app.use(express.json());
     this.app.use((req, res, next) => {
       res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');

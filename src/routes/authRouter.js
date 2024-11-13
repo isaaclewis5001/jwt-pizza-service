@@ -2,6 +2,7 @@ const express = require('express');
 const { asyncHandler } = require('../endpointHelper.js');
 const { Role } = require('../model/model.js');
 const JWToken = require('../JWToken.js');
+const metrics = require('../metrics.js');
 
 const endpoints = [
   {
@@ -96,12 +97,14 @@ class AuthRouter {
     async function setAuth(user) {
       const token = JWToken.sign(user, app.context.config.jwtSecret);
       await app.context.database.loginUser(user.id, token);
+      metrics.reportLogin();
       return token;
     }
 
     async function clearAuth(req) {
       const token = JWToken.fromRequest(req);
       if (token) {
+        metrics.reportLogout();
         await app.context.database.logoutUser(token);
       }
     }
