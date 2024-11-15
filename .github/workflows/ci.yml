@@ -61,16 +61,16 @@ jobs:
               apiKey: '${{ secrets.FACTORY_API_KEY }}',
             },
             grafana: {
-              "source": "jwt-pizza-service",
-              "userId": "${{ secrets.GRAFANA_USER_ID }}",
-              "url": "https://influx-prod-13-prod-us-east-0.grafana.net/api/v1/push/influx/write",
-              "apiKey": "${{ secrets.GRAFANA_API_KEY }}"
+              source: 'jwt-pizza-service',
+              userId: '${{ secrets.GRAFANA_USER_ID }}',
+              url: 'https://influx-prod-13-prod-us-east-0.grafana.net/api/v1/push/influx/write',
+              apiKey: '${{ secrets.GRAFANA_API_KEY }}'
             },
             logging: {
-              source: "jwt-pizza-service",
-              userId: "${{ secrets.LOGGING_USER_ID }}",
-              url: "https://logs-prod-006.grafana.net/loki/api/v1/push",
-              apiKey: "${{ secrets.LOGGING_API_KEY }}",
+              source: 'jwt-pizza-service',
+              userId: '${{ secrets.LOGGING_USER_ID }}',
+              url: 'https://logs-prod-006.grafana.net/loki/api/v1/push',
+              apiKey: '${{ secrets.LOGGING_API_KEY }}',
             }
           };" > src/config.js
 
