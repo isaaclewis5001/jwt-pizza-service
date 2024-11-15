@@ -5,18 +5,17 @@ const FranchiseRouter = require('./routes/franchiseRouter.js');
 const version = require('./version.json');
 const JWToken = require('./JWToken.js');
 const metrics = require('./metrics.js');
-const responseTime = require('response-time');
+const logger = require('./logger.js');
 
 
 function requestReporting(req, _, next) {
   metrics.incrementRequests(req.method);
+  const t1 = Date.now();
   next();
+  const t2 = Date.now();
+  metrics.reportServiceLatency(t2 - t1);
 }
 
-
-function responseTimeReporting(_, _, time) {
-  metrics.reportServiceLatency(time)
-}
 
 class App {
   constructor(appContext) {
@@ -33,7 +32,9 @@ class App {
             metrics.reportAuth(true);
             return await next();
           }
-        } catch { }
+        } catch {
+          // Treat intermediate exceptions as auth failures
+        }
       }
       metrics.reportAuth(false);
       return res.status(401).send({ message: 'unauthorized' });
@@ -49,7 +50,7 @@ class App {
 
     this.app = express();
     this.app.use(requestReporting);
-    this.app.use(responseTime(responseTimeReporting))
+    this.app.use(logger.httpLogger);
     this.app.use(express.json());
     this.app.use((req, res, next) => {
       res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
@@ -91,6 +92,7 @@ class App {
 
     // Default error handler for all exceptions and errors.
     this.app.use((err, _req, res, next) => {
+      logger.unhandledErrorLogger(err);
       res.status(err.statusCode ?? 500).json({ message: err.message, stack: err.stack });
       next();
     });

@@ -3,6 +3,7 @@ const { StatusCodeError } = require('../endpointHelper.js');
 const dbModel = require('./dbModel.js');
 const { Role } = require('../model/model.js');
 const ConnectionPool = require('./ConnectionPool.js');
+const logger = require('../logger.js');
 
 class Database {
   constructor(config) {
@@ -304,6 +305,7 @@ class Database {
   }
 
   static async query(connection, sql, params) {
+    logger.dbLogger({ "query": sql });
     const [results] = await connection.execute(sql, params);
     return results;
   }

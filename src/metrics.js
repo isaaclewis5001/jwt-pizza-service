@@ -65,10 +65,8 @@ class Metrics {
       this.sendMetricToGrafana('latency', 'service', 'avg', safeDiv(this.totalLatency, this.responseCount));
       this.sendMetricToGrafana('latency', 'factory', 'avg', safeDiv(this.totalFactoryLatency, this.factoryRequestCount));
 
-      let sum = 0
       for (let method in this.totalRequests) {
         this.sendMetricToGrafana('request', method, 'total', this.totalRequests[method]);
-        sum += this.totalRequests[method];
       }
     }, 10000);
     timer.unref();

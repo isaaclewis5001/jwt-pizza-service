@@ -3,6 +3,7 @@ const config = require('../config.js');
 const { Role } = require('../model/model.js');
 const { asyncHandler, StatusCodeError } = require('../endpointHelper.js');
 const metrics = require('../metrics.js');
+const logger = require('../logger.js');
 
 
 const endpoints = [
@@ -102,6 +103,13 @@ class OrderRouter {
           metrics.reportSale(0, 0, false);
           res.status(500).send({ message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
         }
+
+        logger.factoryLogger({
+          franchiseId: orderReq.franchiseId,
+          storeId: orderReq.storeId,
+          success: r.ok,
+          orderId: order.id
+        });
       })
     );
   }
