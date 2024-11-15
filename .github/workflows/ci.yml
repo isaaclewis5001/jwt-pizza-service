@@ -69,7 +69,7 @@ jobs:
             logging: {
               source: "jwt-pizza-service",
               userId: "${{ secrets.LOGGING_USER_ID }}",
-              url: 'https://logs-prod-006.grafana.net/loki/api/v1/push',
+              url: "https://logs-prod-006.grafana.net/loki/api/v1/push",
               apiKey: "${{ secrets.LOGGING_API_KEY }}",
             }
           };" > src/config.js
