@@ -46,6 +46,9 @@ class Metrics {
     this.totalFactoryLatency = 0;
     this.factoryRequestCount = 0;
 
+    this.unhandledErrors = 0;
+    this.statusCodeErrors = 0;
+
     // This will periodically sent metrics to Grafana
     const timer = setInterval(() => {
 
@@ -64,6 +67,9 @@ class Metrics {
 
       this.sendMetricToGrafana('latency', 'service', 'avg', safeDiv(this.totalLatency, this.responseCount));
       this.sendMetricToGrafana('latency', 'factory', 'avg', safeDiv(this.totalFactoryLatency, this.factoryRequestCount));
+
+      this.sendMetricToGrafana('unhandled_exceptions', 'all', 'total', this.unhandledErrors);
+      this.sendMetricToGrafana('response_errors', 'all', 'total', this.statusCodeErrors);
 
       for (let method in this.totalRequests) {
         this.sendMetricToGrafana('request', method, 'total', this.totalRequests[method]);
@@ -119,6 +125,14 @@ class Metrics {
   reportFactoryLatency(time) {
     this.totalFactoryLatency += time;
     this.factoryRequestCount++;
+  }
+
+  reportResponseStatusError() {
+    this.statusCodeErrors++;
+  }
+
+  reportUnhandledError() {
+    this.unhandledErrors++;
   }
 
   sendMetricToGrafana(metricPrefix, tag, metricName, metricValue) {

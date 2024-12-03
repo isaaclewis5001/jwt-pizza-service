@@ -8,12 +8,15 @@ const metrics = require('./metrics.js');
 const logger = require('./logger.js');
 
 
-function requestReporting(req, _, next) {
+function requestReporting(req, res, next) {
   metrics.incrementRequests(req.method);
   const t1 = Date.now();
   next();
   const t2 = Date.now();
   metrics.reportServiceLatency(t2 - t1);
+  if (res.statusCode >= 400) {
+    metrics.reportResponseStatusError();
+  }
 }
 
 
@@ -93,6 +96,7 @@ class App {
     // Default error handler for all exceptions and errors.
     this.app.use((err, _req, res, next) => {
       logger.unhandledErrorLogger(err);
+      metrics.reportUnhandledError();
       res.status(err.statusCode ?? 500).json({ message: err.message, stack: err.stack });
       next();
     });
