@@ -324,7 +324,7 @@ class Database {
         for (const statement of dbModel.tableCreateStatements) {
           await conn.query(statement);
         }
-        const defaultAdmin = { name: '常用名字', email: 'a@jwt.com', password: 'admin', roles: [{ role: Role.Admin }] };
+        const defaultAdmin = { ...this.config.admin, roles: [{ role: Role.Admin }] };
         await Database._addUserWithConn(defaultAdmin, conn);
       }
     } catch (err) {
