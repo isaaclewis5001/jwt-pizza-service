@@ -1,4 +1,5 @@
-const supertest = require('supertest')
+const supertest = require('supertest');
+const config = require('../config');
 
 let testUsers = [
   {
@@ -14,10 +15,8 @@ let testUsers = [
   },
 ];
 
-let defaultAdmin = {
-  name: '常用名字',
-  email: 'a@jwt.com',
-  password: 'admin',
+const defaultAdmin = {
+  ...config.admin,
   roles: [{ role: 'admin' }]
 };
 
