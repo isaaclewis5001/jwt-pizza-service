@@ -55,6 +55,11 @@ jobs:
                 connectTimeout: 60000,
               },
               listPerPage: 10,
+              admin: {
+                name: 'tadmin',
+                email: '${{ secrets.TEST_ADMIN_EMAIL }}',
+                password: '${{ secrets.TEST_ADMIN_PASSWORD }}',
+              },
             },
             factory: {
               url: 'https://pizza-factory.cs329.click',
@@ -71,11 +76,6 @@ jobs:
               userId: '${{ secrets.LOGGING_USER_ID }}',
               url: 'https://logs-prod-006.grafana.net/loki/api/v1/push',
               apiKey: '${{ secrets.LOGGING_API_KEY }}',
-            },
-            admin: {
-              name: 'tadmin',
-              email: '${{ secrets.TEST_ADMIN_EMAIL }}',
-              password: '${{ secrets.TEST_ADMIN_PASSWORD }}',
             },
           };" > src/config.js
 
