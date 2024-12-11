@@ -4,8 +4,6 @@ const { addToMenu, testMenu, getMenu, getOrders } = require("./orderUtils");
 const withApp = require("./withApp");
 const config = require('../config.js');
 
-jest.setTimeout(10000000);
-
 test('order cycle', async () => {
   await withApp(async (app) => {
     let fetchFactoryInner;

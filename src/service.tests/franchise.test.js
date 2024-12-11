@@ -3,9 +3,6 @@ const withApp = require('./withApp');
 const { loginUser, defaultAdmin, testUsers, registerUser } = require('./authUtils');
 const { createFranchise, testFranchises, deleteFranchise, listAllFranchises, listUserFranchises, createStore } = require('./franchiseUtils');
 
-jest.setTimeout(100000000);
-
-
 test('franchise api', async () => {
   await withApp(async (app) => {
     const adminLogin = await loginUser(app, defaultAdmin);

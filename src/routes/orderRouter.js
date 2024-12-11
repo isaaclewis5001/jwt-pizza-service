@@ -84,9 +84,9 @@ class OrderRouter {
     );
   }
 
-  async createOrder(req, res) {
+  createOrder = ((that) => async (req, res) => {
     const orderReq = req.body;
-    const order = await this.context.database.addDinerOrder(req.user, orderReq);
+    const order = await that.context.database.addDinerOrder(req.user, orderReq);
     const startTime = Date.now();
     const r = await fetch(`${config.factory.url}/api/order`, {
       method: 'POST',
@@ -94,27 +94,26 @@ class OrderRouter {
       body: JSON.stringify({ diner: { id: req.user.id, name: req.user.name, email: req.user.email }, order }),
     });
     const j = await r.json();
-    this.context.metrics.reportFactoryLatency(Date.now() - startTime);
+    that.context.metrics.reportFactoryLatency(Date.now() - startTime);
     if (r.ok) {
       const price = order.items.reduce((acc, item) => {
         try { return acc + Number(item.price) }
         catch { return acc }
       }, 0);
-      this.context.metrics.reportSale(order.items.length, price, true);
+      that.context.metrics.reportSale(order.items.length, price, true);
       res.send({ order, jwt: j.jwt, reportUrl: j.reportUrl });
     } else {
-      this.context.metrics.reportSale(0, 0, false);
+      that.context.metrics.reportSale(0, 0, false);
       res.status(500).send({ message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
     }
 
-    this.context.logger.factoryLogger({
+    that.context.logger.factoryLogger({
       franchiseId: orderReq.franchiseId,
       storeId: orderReq.storeId,
       success: r.ok,
       orderId: order.id
     });
-
-  }
+  })(this)
 }
 
 
