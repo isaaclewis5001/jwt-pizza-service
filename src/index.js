@@ -6,7 +6,7 @@ const Logger = require('./logger.js')
 
 const logger = new Logger(config);
 const metrics = new Metrics(config);
-const db = new Database(config.db);
+const db = new Database(config.db, logger);
 const app = new App({
   database: db,
   config,
