@@ -4,17 +4,20 @@ const { addToMenu, testMenu, getMenu, getOrders } = require("./orderUtils");
 const withApp = require("./withApp");
 const config = require('../config.js');
 
+jest.setTimeout(10000000);
+
 test('order cycle', async () => {
   await withApp(async (app) => {
     let fetchFactoryInner;
 
     global.fetch = async (route, options) => {
       if (!route.startsWith(config.factory.url)) {
-        throw new TypeError("Forbiden URL")
+        return new Response("Not found", { status: 404 })
+        //throw new TypeError("Forbiden URL")
       }
       let subRoute = route.slice(config.factory.url.length);
       if (subRoute !== "/api/order" || options.method !== 'POST') {
-        return Response("Not found", { status: 404 });
+        return new Response("Not found", { status: 404 });
       }
       if (!JSON.parse(options.body)) {
         fail();

@@ -1,5 +1,3 @@
-const config = require('./config');
-
 class Logger {
   constructor(config) {
     this.config = config;
@@ -60,6 +58,9 @@ class Logger {
   }
 
   async sendLogToGrafana(event) {
+    if (this.config.isTest) {
+      return
+    }
     // A haiku for javascript injection
     //
     // My trust was betrayed
@@ -86,5 +87,4 @@ class Logger {
   }
 }
 
-const logger = new Logger(config);
-module.exports = logger; 
+module.exports = Logger; 

@@ -1,5 +1,4 @@
 const os = require('os');
-const config = require('./config');
 
 
 function getCpuUsagePercentage() {
@@ -23,7 +22,9 @@ function safeDiv(x, y) {
 }
 
 class Metrics {
-  constructor() {
+  constructor(config) {
+    this.config = config;
+
     this.totalRequests = {
       "post": 0,
       "get": 0,
@@ -136,6 +137,10 @@ class Metrics {
   }
 
   sendMetricToGrafana(metricPrefix, tag, metricName, metricValue) {
+    const config = this.config;
+    if (config.isTest) {
+      return;
+    }
     const metric = `${metricPrefix},source=${config.grafana.source},tag=${tag} ${metricName}=${metricValue}`;
 
     fetch(`${config.grafana.url}`, {
@@ -156,5 +161,4 @@ class Metrics {
   }
 }
 
-const metrics = new Metrics();
-module.exports = metrics;
+module.exports = Metrics;

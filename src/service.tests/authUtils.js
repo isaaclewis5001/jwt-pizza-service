@@ -16,7 +16,7 @@ let testUsers = [
 ];
 
 const defaultAdmin = {
-  ...config.admin,
+  ...config.db.admin,
   roles: [{ role: 'admin' }]
 };
 

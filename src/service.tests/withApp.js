@@ -1,7 +1,8 @@
 const globalConfig = require('../config.js');
 const Database = require('../database/database.js');
 const App = require('../service.js');
-
+const Logger = require('../logger.js');
+const Metrics = require('../metrics.js');
 
 async function withApp(fn) {
   const rand = Math.floor(Math.random() * 10000000000);
@@ -19,15 +20,20 @@ async function withApp(fn) {
 
   const config = {
     ...globalConfig,
-    db: dbConfig
+    db: dbConfig,
+    isTest: true,
   }
 
-  const database = new Database(dbConfig);
+  const logger = new Logger(config);
+  const metrics = new Metrics(config);
+  const database = new Database(dbConfig, logger);
 
   try {
     const appContext = {
       config,
       database,
+      logger,
+      metrics,
     }
 
     const app = new App(appContext)

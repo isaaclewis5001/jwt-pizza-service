@@ -13,7 +13,7 @@ class ConnectionPool {
 
   async getConnection() {
     await this._initialized;
-    return this._getConnection();
+    return await this._getConnection();
   }
 
   async _initialize(initFn) {
@@ -21,7 +21,8 @@ class ConnectionPool {
     try {
       connection = await this._getConnection(false);
     }
-    catch {
+    catch (e) {
+      console.log(e);
       console.warn("could not connect to database, most endpoints will break!")
       return;
     }

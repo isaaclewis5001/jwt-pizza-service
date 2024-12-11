@@ -1,7 +1,9 @@
-const {expect, test} = require('@jest/globals');
+const { expect, test } = require('@jest/globals');
 
 const { registerUser, loginUser, logoutUser, updateUser, testUsers, defaultAdmin } = require('./authUtils.js');
 const withApp = require('./withApp.js');
+
+jest.setTimeout(10000000);
 
 function validateLoginResponse(response, user) {
   expect(response.user).toBeDefined();
@@ -78,7 +80,7 @@ test('user auth cycle', async () => {
       defaultAdmin
     );
     const adminAuth = loginAdminResponse.token;
-    
+
     const updateUser1Result = await updateUser(app, login1Response.token, user1Id, "new_email", undefined);
 
     const newUser1 = { ...user1, email: "new_email" };

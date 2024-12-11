@@ -2,7 +2,6 @@ const express = require('express');
 const { asyncHandler } = require('../endpointHelper.js');
 const { Role } = require('../model/model.js');
 const JWToken = require('../JWToken.js');
-const metrics = require('../metrics.js');
 
 const endpoints = [
   {
@@ -39,6 +38,10 @@ const endpoints = [
 
 class AuthRouter {
   constructor(app) {
+    const that = this;
+
+    this.context = app.context;
+
     this.router = express.Router();
     this.router.endpoints = endpoints;
 
@@ -51,7 +54,7 @@ class AuthRouter {
           return res.status(400).json({ message: 'name, email, and password are required' });
         }
         const user = await app.context.database.addUser({ name, email, password, roles: [{ role: Role.Diner }] });
-        const auth = await setAuth(user);
+        const auth = await that.setAuth(user);
         res.json({ user: user, token: auth.fullText });
       })
     );
@@ -59,22 +62,14 @@ class AuthRouter {
     // login
     this.router.put(
       '/',
-      asyncHandler(async (req, res) => {
-        const { email, password } = req.body;
-        const user = await app.context.database.getUser(email, password);
-        const auth = await setAuth(user);
-        res.json({ user: user, token: auth.fullText });
-      })
+      asyncHandler((req, res) => that.login(req, res))
     );
 
     // logout
     this.router.delete(
       '/',
       app.authenticateToken,
-      asyncHandler(async (req, res) => {
-        clearAuth(req);
-        res.json({ message: 'logout successful' });
-      })
+      asyncHandler((req, res) => that.logout(req, res))
     );
 
     // updateUser
@@ -89,24 +84,39 @@ class AuthRouter {
           return res.status(401).json({ message: 'unauthorized' });
         }
 
-        const updatedUser = await app.context.database.updateUser(userId, email, password);
+        const updatedUser = await that.context.database.updateUser(userId, email, password);
         res.json(updatedUser);
       })
     );
+  }
 
-    async function setAuth(user) {
-      const token = JWToken.sign(user, app.context.config.jwtSecret);
-      await app.context.database.loginUser(user.id, token);
-      metrics.reportLogin();
-      return token;
+  logout = ((that) => async (req, res) => {
+    that.clearAuth(req);
+    res.json({ message: 'logout successful' });
+  })(this)
+
+  login = ((that) => async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ message: 'bad request'});
     }
+    const user = await that.context.database.getUser(email, password);
+    const auth = await that.setAuth(user);
+    res.json({ user: user, token: auth.fullText });
+  })(this)
 
-    async function clearAuth(req) {
-      const token = JWToken.fromRequest(req);
-      if (token) {
-        metrics.reportLogout();
-        await app.context.database.logoutUser(token);
-      }
+  async setAuth(user) {
+    const token = JWToken.sign(user, this.context.config.jwtSecret);
+    await this.context.database.loginUser(user.id, token);
+    this.context.metrics.reportLogin();
+    return token;
+  }
+
+  async clearAuth(req) {
+    const token = JWToken.fromRequest(req);
+    if (token) {
+      this.context.metrics.reportLogout();
+      await this.context.database.logoutUser(token);
     }
   }
 }
